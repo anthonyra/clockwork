@@ -37,8 +37,8 @@ pub fn reset(client: &Client) -> Result<(), CliError> {
     let ix = Instruction {
         program_id: antegen_network_program::ID,
         accounts: antegen_network_program::accounts::RegistryReset {
-            payer: admin,
             admin,
+            config: Config::pubkey(),
             registry,
             registry_fee: RegistryFee::pubkey(registry),
             snapshot: Snapshot::pubkey(0),

@@ -17,12 +17,8 @@ const MINIMUM_FEE: u64 = 1000;
 #[instruction(amount: u64, id: ThreadId, instructions: Vec<SerializableInstruction>,  trigger: Trigger)]
 pub struct ThreadCreate<'info> {
     /// The authority (owner) of the thread.
-    #[account()]
-    pub authority: Signer<'info>,
-
-    /// The payer for account initializations. 
     #[account(mut)]
-    pub payer: Signer<'info>,
+    pub authority: Signer<'info>,
 
     /// The Solana system program.
     #[account(address = system_program::ID)]
@@ -37,7 +33,7 @@ pub struct ThreadCreate<'info> {
             id.as_ref(),
         ],
         bump,
-        payer= payer,
+        payer= authority,
         space = 8 +                              // discriminator
                 size_of::<Thread>() +            // base struct
                 id.len() +                       // id length
@@ -62,7 +58,6 @@ pub fn handler(
 
     // Get accounts
     let authority = &ctx.accounts.authority;
-    let payer = &ctx.accounts.payer;
     let system_program = &ctx.accounts.system_program;
     let thread = &mut ctx.accounts.thread;
 
@@ -88,7 +83,7 @@ pub fn handler(
         CpiContext::new(
             system_program.to_account_info(),
             Transfer {
-                from: payer.to_account_info(),
+                from: authority.to_account_info(),
                 to: thread.to_account_info(),
             },
         ),

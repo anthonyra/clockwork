@@ -3,10 +3,16 @@ use {crate::state::*, anchor_lang::prelude::*};
 #[derive(Accounts)]
 pub struct WorkerClaim<'info> {
     #[account()]
-    pub authority: Signer<'info>,
+    pub payer: Signer<'info>,
 
-    #[account(mut)]
-    pub pay_to: SystemAccount<'info>,
+    /// CHECK: This account is unchecked because its validity is enforced by the
+    /// #[account(address = worker.authority)] attribute, ensuring it matches
+    /// the `authority` field in the `worker`. The external logic guarantees
+    /// it is a valid account address.
+    #[account(
+        address = worker.authority
+    )]
+    pub authority: UncheckedAccount<'info>,
 
     #[account(
         mut,
@@ -34,7 +40,7 @@ pub struct WorkerClaim<'info> {
 pub fn handler(ctx: Context<WorkerClaim>) -> Result<()> {
     // Get accounts
     let commission = &ctx.accounts.commission;
-    let pay_to = &ctx.accounts.pay_to;
+    let pay_to = &ctx.accounts.authority;
 
     let commission_data_len = 8 + commission.try_to_vec()?.len();
     let commission_rent_balance = Rent::get()?.minimum_balance(commission_data_len);
@@ -44,9 +50,8 @@ pub fn handler(ctx: Context<WorkerClaim>) -> Result<()> {
         .unwrap_or(0);
 
     // Transfer commission to the pay_to account
-    **commission.to_account_info().try_borrow_mut_lamports()? = commission_lamports
-        .checked_sub(available_lamports)
-        .unwrap();
+    **commission.to_account_info().try_borrow_mut_lamports()? =
+        commission_lamports.checked_sub(available_lamports).unwrap();
     **pay_to.to_account_info().try_borrow_mut_lamports()? = pay_to
         .to_account_info()
         .lamports()

@@ -6,14 +6,14 @@ use {
 
 #[derive(Accounts)]
 pub struct PoolCreate<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
-    #[account(address = config.admin)]
+    #[account(
+        mut,
+        address = config.admin
+    )]
     pub admin: Signer<'info>,
 
     #[account(
-        address = Config::pubkey(), 
+        address = Config::pubkey(),
         has_one = admin
     )]
     pub config: Account<'info, Config>,
@@ -25,7 +25,7 @@ pub struct PoolCreate<'info> {
             registry.total_pools.to_be_bytes().as_ref(),
         ],
         bump,
-        payer = payer,
+        payer = admin,
         space = 8 + size_of::<Pool>() + size_of::<Pubkey>(),
     )]
     pub pool: Account<'info, Pool>,
